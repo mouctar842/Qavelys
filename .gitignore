@@ -1,0 +1,15 @@
+.venv/
+.local/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.env
+node_modules/
+dist/
+*.tsbuildinfo
+test-results/
+playwright-report/
+*.log
+.DS_Store

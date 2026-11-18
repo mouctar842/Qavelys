@@ -1,0 +1,2 @@
+# Rendu local des PDF pour validation visuelle, non requis en production.
+pypdfium2==5.15.2

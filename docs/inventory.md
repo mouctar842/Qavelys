@@ -1,0 +1,19 @@
+# Inventaire — contrat et contraintes
+
+Lot initial : entrepôts et emplacements, soldes physiques/réservés, transferts et ajustements. Extensions du 17 novembre 2026 : réservations automatiques et partielles issues des commandes clients (`orders-approvals.md`), réceptions fournisseurs/livraisons clients partielles, consommé et restant, mouvements physiques liés aux documents validés (`fulfillment.md`). L’acceptation du parcours V1 de bout en bout avec facturation et E2E reste à réaliser.
+
+Chaque entreprise reçoit atomiquement un entrepôt MAIN, un emplacement interne Stock et trois emplacements logiques Client/Fournisseur/Ajustement. Ce sont des configurations réelles sans quantité initiale ni produit fictif. Les entreprises existantes reçoivent uniquement les éléments absents lors de la migration.
+
+API `/api/v1/companies/{id}/inventory/` : `warehouses/`, `locations/`, `balances/`, `movements/`, `transfers/`, `adjustments/`. POST création ; POST `{resource}/{id}/update|archive|restore/` pour entrepôts/emplacements ; POST `{transfers|adjustments}/{id}/validate|cancel/` pour documents. Listes filtrées par société, recherche et pagination. Entrepôts/emplacements logiques inactifs conservés, aucune suppression. Pas de déplacement d’un emplacement vers un autre entrepôt après création.
+
+Permissions : `inventory.view`, `inventory.warehouse.manage`, `inventory.transfer.create`, `inventory.transfer.validate`, `inventory.adjustment.create`, `inventory.adjustment.validate`. Module inventaire requis, dépendant du catalogue. Tous les liens entre objets portent une contrainte composite société, FK PROTECT. Quantités Decimal à six décimales, jamais de float.
+
+Transitions : brouillon → validé ou annulé. Validation répétée retourne le document existant sans nouveau mouvement. Document validé immuable ; correction par nouveau document traçable. Création avec UUID `request_key` obligatoire, unique par entreprise/type de document, contenu identique exigé au rejeu. Le client conserve sa clé tant que la création n’est pas confirmée.
+
+Chaque mutation verrouille d’abord l’entreprise, puis les soldes triés ; évite les inversions de verrous avec les actions administratives. Soldes créés sous ce verrou et verrouillés explicitement. Physique ≥ réservé ≥ 0 en SQL. Transfert interne : source et destination distinctes, produit actif non service, emplacements et entrepôts actifs. Débit limité à physique-réservé, crédit atomique. Ajustement : comptage physique positif ou nul, différence figée à validation ; refuse comptage inférieur au réservé. Un mouvement validé référence obligatoirement son transfert ou sa ligne d’ajustement par FK ; pas de référence polymorphe libre. Les services ne génèrent aucun mouvement.
+
+Un entrepôt/emplacement contenant un solde physique ou réservé ne peut pas être archivé. L’archivage d’un entrepôt conserve ses emplacements et bloque leur usage ; réactivation explicite possible. Configuration du premier entrepôt accessible depuis les paramètres d’entreprise via son module une fois activé.
+
+Intégrité catalogue : dès qu’un produit possède un solde, un mouvement ou une ligne de commande déjà confirmée, son unité de référence ne peut plus changer et il ne peut pas être converti entre service et produit géré en stock. Cela évite de réinterpréter les quantités historiques ou en attente ; créer un nouveau produit pour une autre unité. Les prix et descriptions restent modifiables avec audit.
+
+Validation du lot : 6 tests backend inventaire et 5 tests frontend inventaire concluants. Couverture : structure et premier entrepôt, transferts et ajustements, soldes exacts, idempotence de création/validation, erreurs et rollback, réservations préservées, concurrence, contraintes société, services exclus, permissions/modules et changement d’entreprise. Parcours complet commandes/réservations/réceptions/livraisons non encore livré ni testé en E2E.

@@ -1,0 +1,58 @@
+from django.urls import include, path
+from core import views
+from core import account_views, admin_views
+from core import notification_views as notifications
+from core.branding import LogoUpload, LogoContent
+from core import health
+from dashboard.views import Overview as DashboardOverview
+
+urlpatterns = [
+    path('api/v1/companies/<uuid:company_id>/hr/', include('people.urls')),
+    path('api/v1/health/live/', health.live),
+    path('api/v1/health/ready/', health.readiness),
+    path('api/v1/platform/', include('core.platform_urls')),
+    path('api/v1/companies/<uuid:company_id>/logo/', LogoUpload.as_view()),
+    path('api/v1/companies/<uuid:company_id>/logo/<uuid:logo_id>/', LogoContent.as_view()),
+    path('api/v1/companies/<uuid:company_id>/dashboard/', DashboardOverview.as_view()),
+    path('api/v1/companies/<uuid:company_id>/notifications/', notifications.Inbox.as_view()),
+    path('api/v1/companies/<uuid:company_id>/notifications/summary/', notifications.Summary.as_view()),
+    path('api/v1/companies/<uuid:company_id>/notifications/sync/', notifications.Sync.as_view()),
+    path('api/v1/companies/<uuid:company_id>/notifications/read-all/', notifications.ReadAll.as_view()),
+    path('api/v1/companies/<uuid:company_id>/notifications/<uuid:pk>/read/', notifications.Read.as_view()),
+    path('api/v1/companies/<uuid:company_id>/invoicing/', include('invoicing.urls')),
+    path('api/v1/companies/<uuid:company_id>/sales/', include('core.order_urls'), {'domain': 'sales'}),
+    path('api/v1/companies/<uuid:company_id>/purchases/', include('core.order_urls'), {'domain': 'purchases'}),
+    path('api/v1/companies/<uuid:company_id>/approvals/', include('approvals.urls')),
+    path('api/v1/companies/<uuid:company_id>/inventory/', include('inventory.urls')),
+    path('api/v1/companies/<uuid:company_id>/crm/', include('crm.urls')),
+    path('api/v1/companies/<uuid:company_id>/reference/', include('reference.urls')),
+    path('api/v1/auth/password-reset/', account_views.password_reset),
+    path('api/v1/auth/password-reset-confirm/', account_views.password_reset_confirm),
+    path('api/v1/auth/resend-verification/', account_views.resend_verification),
+    path('api/v1/invitations/accept/', admin_views.AcceptInvitationView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/settings/', admin_views.SettingsView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/permissions/', admin_views.PermissionsView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/role-templates/', admin_views.RoleTemplatesView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/roles/create/', admin_views.SaveRoleView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/roles/<uuid:role_id>/update/', admin_views.SaveRoleView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/members/<uuid:member_id>/roles/', admin_views.MemberRolesView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/members/<uuid:member_id>/activate/', admin_views.ActivateMemberView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/invitations/', admin_views.InvitationsView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/invitations/<uuid:invitation_id>/<str:action>/', admin_views.InvitationActionView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/modules/', admin_views.ModulesView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/modules/<slug:code>/<str:action>/', admin_views.ModuleActionView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/audit/', admin_views.AuditView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/sequences/', admin_views.SequencesView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/sequences/<str:document_type>/', admin_views.SequenceUpdateView.as_view()),
+    path('api/v1/auth/csrf/', views.csrf),
+    path('api/v1/auth/register/', views.register),
+    path('api/v1/auth/verify-email/', views.verify_email),
+    path('api/v1/auth/login/', views.sign_in),
+    path('api/v1/auth/logout/', views.sign_out),
+    path('api/v1/auth/me/', views.MeView.as_view()),
+    path('api/v1/companies/', views.CompaniesView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/context/', views.CompanyContextView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/members/', views.MembersView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/roles/', views.RolesView.as_view()),
+    path('api/v1/companies/<uuid:company_id>/members/<uuid:member_id>/suspend/', views.SuspendMemberView.as_view()),
+]

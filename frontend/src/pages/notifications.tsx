@@ -1,0 +1,27 @@
+import { useState } from 'react';
+import { Bell } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { api, companyKey } from '../api';
+import { companyPath, useWorkspace } from '../workspace';
+import { Button } from '../components/ui/button';
+import { ErrorMessage, Failure, Loading } from '../components/feedback';
+
+type Notice = { id: string; type: string; title: string; message: string; created_at: string; read_at: string | null; target: string };
+async function summary(companyId: string) { await api(`companies/${companyId}/notifications/sync/`, {}); return api<{ unread_count: number }>(`companies/${companyId}/notifications/summary/`); }
+
+export function NotificationBell({ companyId, enabled }: { companyId: string; enabled: boolean }) {
+  const query = useQuery({ queryKey: companyKey(companyId, 'notification-summary'), queryFn: () => summary(companyId), enabled: enabled && Boolean(companyId), retry: false, staleTime: 30_000, refetchInterval: enabled ? 60_000 : false });
+  if (!enabled) return null;
+  return <div className="notification-bell"><Link to={`${companyPath(companyId)}/notifications`} aria-label="Ouvrir les notifications"><Bell size={20}/>{!query.error && query.data && query.data.unread_count > 0 && <span className="notification-count" aria-label={`${query.data.unread_count} notification${query.data.unread_count > 1 ? 's' : ''} non lue${query.data.unread_count > 1 ? 's' : ''}`}>{query.data.unread_count}</span>}</Link>{query.error && <button className="notification-retry" aria-label="Réessayer les notifications" title="Notifications indisponibles, réessayer" onClick={() => void query.refetch()}>!</button>}</div>;
+}
+
+export function NotificationsPage() {
+  const { companyId } = useWorkspace(); const cache = useQueryClient(); const [state, setState] = useState('all'); const [search, setSearch] = useState(''); const [page, setPage] = useState(1);
+  const sync = useQuery({ queryKey: companyKey(companyId, 'notification-summary'), queryFn: () => summary(companyId), retry: false, staleTime: 30_000 });
+  const query = useQuery({ queryKey: [...companyKey(companyId, 'notifications'), state, search, page, sync.dataUpdatedAt], queryFn: () => api<{ count: number; unread_count: number; results: Notice[] }>(`companies/${companyId}/notifications/?state=${state}&search=${encodeURIComponent(search)}&page=${page}`), enabled: sync.isSuccess, retry: false });
+  const refresh = () => Promise.all(['notifications', 'notification-summary'].map(key => cache.invalidateQueries({ queryKey: companyKey(companyId, key) })));
+  const read = useMutation({ mutationFn: ({ id, value }: { id: string; value: boolean }) => api(`companies/${companyId}/notifications/${id}/read/`, { read: value }), onSuccess: refresh });
+  const readAll = useMutation({ mutationFn: () => api(`companies/${companyId}/notifications/read-all/`, {}), onSuccess: refresh });
+  return <><header className="page-heading"><div><p className="eyebrow">VOTRE ENTREPRISE ACTIVE</p><h1>Notifications</h1><p>Alertes personnelles des modules auxquels tu as accès. Les alertes résolues ne sont plus affichées.</p></div><Button variant="outline" disabled={sync.isFetching} onClick={() => void sync.refetch()}>Synchroniser les notifications</Button></header><section className="card"><div className="table-toolbar"><label>Rechercher une notification<input value={search} onChange={event => { setSearch(event.target.value); setPage(1); }}/></label><label>État de lecture<select value={state} onChange={event => { setState(event.target.value); setPage(1); }}><option value="all">Toutes</option><option value="unread">Non lues</option><option value="read">Lues</option></select></label><Button variant="outline" disabled={readAll.isPending || !query.data?.unread_count} onClick={() => { if (window.confirm('Marquer toutes les notifications visibles comme lues ?')) readAll.mutate(); }}>Tout marquer comme lu</Button></div><ErrorMessage error={read.error || readAll.error}/>{sync.isPending ? <Loading/> : sync.error ? <Failure error={sync.error} retry={() => void sync.refetch()}/> : query.isPending ? <Loading/> : query.error ? <Failure error={query.error} retry={() => void query.refetch()}/> : <><p>{query.data.unread_count} notification(s) non lue(s).</p>{query.data.results.length === 0 && <p>Aucune notification ne correspond à cette vue.</p>}{query.data.results.map(item => <article key={item.id} className={`notification-item ${item.read_at ? 'is-read' : ''}`}><h2>{item.title}</h2><p>{item.message}</p><small>{new Date(item.created_at).toLocaleString('fr-FR')} · {item.read_at ? 'Lue' : 'Non lue'}</small><div className="row-actions"><Link to={`${companyPath(companyId)}/${item.target}`}>Ouvrir la source</Link><Button variant="outline" disabled={read.isPending} onClick={() => read.mutate({ id: item.id, value: !item.read_at })}>{item.read_at ? 'Marquer comme non lu' : 'Marquer comme lu'}</Button></div></article>)}<div className="table-pagination"><span>Page {page} · {query.data.count} notification(s)</span><div><Button variant="outline" disabled={page <= 1} onClick={() => setPage(value => value - 1)}>Notifications précédentes</Button><Button variant="outline" disabled={page * 25 >= query.data.count} onClick={() => setPage(value => value + 1)}>Notifications suivantes</Button></div></div></>}</section></>;
+}

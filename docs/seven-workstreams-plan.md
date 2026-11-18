@@ -1,0 +1,38 @@
+# Évolution Qavelys — audit et ordre d’exécution
+
+Demande utilisateur du 17 novembre 2026 archivée intégralement dans `seven-workstreams-request.md`. La préparation de production est mise en suspens à sa demande. Le cahier maître reste intact ; ce complément autorise explicitement le périmètre employés et Production auparavant hors V1. Les décisions financières déjà validées, sessions/CSRF, PostgreSQL et isolation restent applicables.
+
+## Audit de l’existant
+
+Monolithe Django/DRF et PostgreSQL, API v1, React/TypeScript strict/Vite, TanStack Query, RHF/Zod. Entités UUID ; montants Decimal ; clés de cache par entreprise. `core.services.require_membership` contrôle utilisateur, adhésion, société et permission ; `core.administration.require_module` contrôle les modules. Mutations sensibles sous transaction/verrou société ; contraintes étrangères composites par migrations. Les permissions restent celles de la base, décrites dans `core/catalog.py` et les migrations des domaines.
+
+| Chantier | Disponible | Écart et intégration prévue |
+|---|---|---|
+| Collaborateurs | Membership distinct de User, invitation, plusieurs entreprises/rôles, suspension, garde du dernier administrateur | Aucun modèle Employé/Département/Mission ni module RH. Ajouter un annuaire employé isolé avec lien facultatif vers une adhésion ; jamais créer de compte ou conférer un rôle par l’enregistrement RH. Ne pas modifier le profil global pour éditer une fiche employé locale. |
+| Rôles | Rôles personnalisés, permissions réelles, affectations multiples, administrateur système protégé | Permissions en liste plate et codes affichés. Regrouper le catalogue réel et proposer des modèles de rôles installables explicitement, sans affectation automatique ni écrasement. |
+| Audit | Journal persistant par entreprise, acteur, UUID cible, avant/après, pagination | Recherche sur code seulement ; JSON brut. Ajouter libellés, cible métier, changements lisibles, filtres auteur/module/période, détails techniques conservés. Aucun accès métier global supplémentaire. |
+| Numérotation | DocumentSequence par société/type, verrou PostgreSQL, références uniques, largeur minimale 6 | Interface technique et lecture seule. Présenter module/utilité/aperçu. Préfixe modifiable avant toute émission seulement, sous company.manage et sequences.view ; compteur jamais éditable ni réinitialisé. Références historiques inchangées. |
+| Clients/fournisseurs | Un Partner à double profil, contacts/recherche/édition ; relations ventes, achats et facturation | Interface commune. Créer deux entrées et contextes métier reposant sur le même Partner ; aucune table de tiers parallèle. Facturation fournisseur/règlements fournisseur absents : ne pas les présenter comme disponibles. |
+| Production | Catalogue stockable, emplacements, soldes, réservations, mouvements et module dependencies réutilisables | Aucun module Production, nomenclature, ordre de fabrication, lot, machine ou contrôle qualité. Ajouter progressivement après contrats dédiés ; réutiliser les verrous/soldes/mouvements et étendre leurs sources explicites. Valorisation, pertes, lots et qualité nécessitent des décisions avant effets irréversibles. Pas de comptabilité générale existante. |
+| Super Admin | Console séparée /plateforme, KPI réels, entreprises/comptes/modules/audit, suspension/réactivation motivées et garde dernier admin | Détail modules par entreprise et gestion des administrateurs d’entreprise à compléter via opérations dédiées auditées, sans ouverture des données métier. Abonnements/offres absents, pas de faux écrans. |
+
+## Ordre et contrats du premier lot
+
+1. Rendre lisibles les permissions, l’audit et la numérotation ; ajouter des modèles de rôles fondés sur les droits existants. Aucun changement d’attribution implicite. Rôles RH/Production proposés uniquement après création réelle des modules et de leurs permissions.
+2. Annuaire employés/départements/missions distinct des accès. Lier éventuellement une fiche à une adhésion de la même société avec unicité et contrainte composite ; archivage sans suspension implicite du compte.
+3. Séparer clients/fournisseurs en réutilisant Partner et les historiques ; puis compléter les opérations de supervision plateforme.
+4. Contrats Production, puis nomenclatures/ressources, ordres/exécution stock, traçabilité/qualité/coûts et KPI. Livraisons petites et testées, sans bouton inerte ni flux financier inventé.
+
+Permissions : réponse existante enrichie par `module_code` et `module_name`, codes/description conservés. Regroupement depuis préfixes et catalogue Module ; permissions inconnues regroupées dans « Autres autorisations ». Catalogue consultable avec roles.view. Modèles via GET/POST `role-templates/`, POST exige roles.manage et confirmation UI. Une collision de nom ne modifie jamais le rôle existant. Les modèles sont disponibles à toutes les entreprises ; leur installation est explicite et idempotente. Aucun utilisateur ne reçoit ces rôles automatiquement.
+
+Numérotation : GET enrichi, POST `sequences/{type}/` exige sequences.view et company.manage, préfixe ASCII lettres majuscules/chiffres/tirets, maximum 20, confirmation UI. Modification refusée après première émission ; contrôle verrou société puis séquence, même ordre que les créateurs. Préfixe modifié journalisé ; aucun champ de format libre, compteur ou remise à zéro exposé.
+
+Audit : lecture seule avec audit.view ; nouveaux champs de présentation ajoutés aux champs bruts existants. Recherche par libellé, auteur et contenu historique ; filtres module/auteur/dates inclusives UTC. Cible fondée sur le snapshot de l’événement, sans requête hors entreprise. Les noms actuels d’utilisateur peuvent différer du nom à la date de l’action ; ne pas réécrire le journal.
+
+## Vérification et suivi
+
+Troisième lot validé le 18 novembre : espaces Clients/Fournisseurs distincts sur Partner commun, références/notes spécifiques, second profil explicite sans doublon, historiques autorisés et créances clients réelles, préremplissage des documents existants. Contrat `partner-workspaces.md`, migration reference 0003 appliquée ; 13 tests PostgreSQL ciblés, 2 tests purs d’audit, 94 cas frontend couverts sur deux exécutions, build et 6 E2E concluants. Les factures et règlements fournisseurs restent un lot financier distinct. Prochaine étape actuelle : compléments Super Admin, puis contrats Production ; déploiement toujours en suspens. Le paragraphe suivant conserve le bilan historique des deux premiers lots.
+
+Premier lot intégré et vérifié le 17 novembre : 21 tests backend ciblés puis 1 rejoué après précision de présentation, 80 frontend, build strict et 4 E2E réussis. Aucun changement de schéma. Rôles/audit/numérotation livrés dans ce lot. Deuxième lot validé le 18 novembre : employés/départements/missions, distincts des comptes et adhésions, contrat `people.md`, migrations people 0001/0002, rôle RH et module activable. 157 backend complets puis 2 ciblés, 87 frontend, build strict et 5 E2E réussis. Prochain lot : espaces clients/fournisseurs sur Partner commun, puis compléments plateforme et Production. Bilan exact et limites dans `progress.md`.
+
+Backend : vrais contrôles d’accès, société étrangère, catalogue réel, installation répétée et concurrence, historique inchangé, séquences concurrentes et refus après émission, recherche/filtres audit. Frontend : sélection/recherche par module, sauvegarde réelle, détails audit, préfixe/aperçu et refus affichés. E2E sur base séparée pour les nouvelles interactions. Résultats exécutés dans `progress.md` ; aucune déclaration des sept chantiers terminés à l’issue du seul premier lot.

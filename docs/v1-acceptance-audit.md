@@ -1,0 +1,26 @@
+# Audit de couverture V1 et extensions — état du 18 novembre 2026
+
+Mise à jour Clients/Fournisseurs : interfaces distinctes et données spécifiques livrées sur le même Partner, ajout explicite du second profil, historiques liés aux documents réels, créances clients et préremplissage des éditeurs. Migration additive reference 0003 appliquée. 13 tests PostgreSQL ciblés, 2 tests purs d’audit, 94 cas frontend couverts sur deux exécutions, build strict et 6 E2E réussis ; détails dans `progress.md`. Les factures/règlements fournisseurs, les compléments plateforme et la Production restent ouverts ; le paragraphe suivant décrit l’état antérieur du lot RH.
+
+Extension autorisée par la demande des sept chantiers : annuaire employés/départements/missions livré et vérifié le 18 novembre, distinct des accès, module hr activable, rôle Responsable RH disponible sans attribution automatique. Migrations people 0001/0002, FK composites, versions et audit ; 157 tests backend complets puis 2 ciblés, 87 frontend, build et 5 E2E réussis. Rôles/permissions, audit lisible et numérotation améliorés au lot précédent. Préparation du déploiement en suspens ; espaces clients/fournisseurs, compléments plateforme et module Production restent ouverts dans `seven-workstreams-plan.md`.
+
+Référence : `QAVELYS_MASTER_SPEC.md`, à conserver intact. « Implémenté » ne signifie ni déployé ni accepté en production. Résultats datés dans `progress.md` ; les lignes en attente restent ouvertes.
+
+| Exigence | État constaté / preuve | Travail restant |
+|---|---|---|
+| SaaS, sessions/CSRF, entreprises, RBAC, invitations, modules | Implémenté, suites backend/frontend ; inscription, entreprise administrée, modules, connexion et CSRF acceptés dans Chromium ; transport e-mail durci, 28 tests ciblés puis 5 réglages réussis, SMTP loopback réel | Fournisseur SMTP réel et délivrabilité à valider sur cible ; invitations/réinitialisation couvertes par les suites, pas par ce scénario navigateur |
+| Exception e-mail locale | Conservée ; hors DEBUG la vérification reste obligatoire | Pas de réactivation locale sans demande |
+| Référentiel, CRM et conversion devis | Implémenté, tests unitaires/intégration ; contacts/taxe/produit parcourus dans Chromium | Étendre ultérieurement les E2E au Kanban et à la conversion CRM |
+| Ventes/achats, approbations, stocks partiels, réservations | Implémenté et testé sur PostgreSQL, concurrence comprise ; achats/réceptions, vente/réservation/livraisons et clôtures acceptés en E2E | Étendre les E2E d’approbations/corrections au-delà des suites backend/frontend déjà concluantes |
+| Factures/avoirs/paiements/PDF | Implémenté, Decimal et arrondi au total, tests et rendu PDF ; deux factures, paiements répartis, soldes et téléchargement PDF acceptés en E2E | Avoirs couverts par suites backend/frontend ; ne pas présenter comme comptabilité générale |
+| Dashboard/lanceur/notifications | Implémenté, suite complète de 123 backend puis 14 ciblés et 75 frontend concluants ; dashboard réel et captures ordinateur/mobile inspectés | Exploitation de la synchronisation périodique ; libellés lisibles des événements d’audit à améliorer |
+| Super-administration plateforme séparée | Console React/API dédiées, entreprises/comptes/modules/audit, statuts motivés, gardes et concurrence testés ; rôle attribué au compte désigné | Exploitation de la procédure opérateur ; aucun bypass des API métier ni usurpation |
+| Logo d’entreprise | Import réellement fourni, contrôle/réencodage, stockage privé versionné, FK composite, affichage par société et E2E validés ; média restauré et empreinte vérifiée | Persistance/permissions du volume privé à valider en Docker ; copie hors site et rétention à organiser |
+| Statuts documentaires/livré/facturé/paiement séparés | Clôture après règlement explicitement validée ; actions complete/resume, dates/auteur/cycle, raisons de blocage, droits et courses testés ; E2E réussi | Suivi des corrections financières ultérieures sans effacer l’historique, déjà couvert par tests backend |
+| E2E Playwright obligatoire | 3 scénarios réussis en 2,8 min, code 0 : ERP/clôtures/reprise, isolation/CSRF/modules, logo et plateforme ; médias/cache/base séparés | Réexécuter le lanceur après futures modifications de parcours ; résultats/rapport dans progress.md |
+| Sauvegarde/restauration PostgreSQL | Commandes privées exécutées sur la base réelle ; restauration dans une nouvelle cible, 64 tables/1 média vérifiés, source conservée | Chiffrement/copie hors site, planification, rétention et exercices réguliers avant production |
+| Healthchecks/exploitation | Sondes live/ready et commande healthcheck réelles, erreurs 503 minimales ; healthchecks Compose préparés et volume média initialisé dans l’image | Valider Docker, journaux et configuration d’exploitation de production |
+| Docker/HTTPS/production | Fichiers locaux présents, limites documentées | Exécuter Docker si disponible, contrôler réglages de production et déploiement autorisé |
+| Performance frontend | Graphique déjà différé ; bundle principal encore signalé | Fractionner les routes si nécessaire sans casser la navigation |
+
+L’audit des dépendances npm est relancé à l’installation de Playwright ; toute alerte est examinée, sans appliquer de mise à niveau forcée aveugle. Aucun fichier ni donnée existante n’est supprimé par cet audit.
