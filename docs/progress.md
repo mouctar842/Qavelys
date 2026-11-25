@@ -1,5 +1,11 @@
 # Progression Qavelys
 
+## Préparation Vercel — 25 novembre 2026
+
+Demande explicite de fichiers et commandes : `frontend/vercel.json`, exclusions d’envoi, script PowerShell de configuration de l’origine backend et guide `docs/vercel.md` créés. Déploiement limité au frontend Vite avec relais API même origine vers Django HTTPS existant, routes SPA et cache API privé. Aucun secret transféré, aucun déploiement exécuté, aucun changement du backend local ou des règles métier. Ce lot ne reprend pas les autres travaux de production en suspens.
+
+Vérifications exécutées : JSON valide, routes SPA/API distinguées, origine locale HTTP refusée par le script. Premier build bloqué par les restrictions de lecture esbuild du sandbox ; relance avec permissions adaptées : TypeScript strict et build Vite réussis (18,14 s pour Vite). Warnings de taille de bundle conservés. Tests sur Vercel, cookies/CSRF de bout en bout et hébergement Django/PostgreSQL/médias/SMTP restent à réaliser ; l’ERP n’est pas déclaré déployé. Le guide précise que CSRF_TRUSTED_ORIGINS doit être configuré dans Django et n’est pas lu automatiquement depuis l’environnement actuel.
+
 ## Lot Clients/Fournisseurs — interfaces et intégrations validées le 18 novembre 2026
 
 **Validation finale navigateur : 6 scénarios E2E réussis, lanceur code 0**, sur la base séparée du run `20261118114835_e18beb58`. Le nouveau parcours crée un client, valide une facture réelle de 100 EUR, vérifie la créance, ajoute le profil fournisseur au même UUID, conserve les données client, préremplit et crée une commande fournisseur puis retrouve son historique. Régressions administration, logo/plateforme, commerce, isolation et RH concluantes. Rapport `.local/e2e-runs/20261118114835_e18beb58/report/index.html` ; captures fournisseur et client mobile sombre inspectées. Aucun débordement de page mobile constaté.
