@@ -1,5 +1,7 @@
 # Déployer l’interface Qavelys sur Vercel
 
+Base choisie par l’utilisateur : **PostgreSQL Supabase**. Configuration et commandes dans [supabase.md](supabase.md). L’URL du proxy Vercel reste celle du backend Django, pas celle de Supabase.
+
 Configuration du 25 novembre 2026. Ce lot reprend uniquement la préparation Vercel demandée ; les sept chantiers restent suivis séparément. Aucun déploiement ni transfert de données réalisé.
 
 ## Périmètre

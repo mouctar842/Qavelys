@@ -1,5 +1,23 @@
 # Progression Qavelys
 
+## SQL de création Supabase — 25 novembre 2026
+
+`infrastructure/supabase-create-schema.sql` généré depuis le schéma réel sauvegardé et sept catalogues globaux techniques uniquement : 67 tables, contraintes/index/séquences, historique Django, sans comptes/entreprises ni documents. Transaction, refus si public contient déjà des tables, RLS activée sans politique publique ; aucune modification distante. Initialisation vide alternative, à ne pas exécuter avant une restauration complète des données. Guide `supabase.md` complété.
+
+Test PostgreSQL local isolé concluant : 67 tables, catalogues/migrations présents, zéro compte/entreprise, toutes les tables avec RLS, rejeu refusé. Base de vérification conservée `qavelys_schema_check_462d8c85c380`. Premier essai : contraintes différées empêchant ALTER RLS, correction par SET CONSTRAINTS ALL IMMEDIATE ; contrôle suivant corrigé pour qualifier les noms public après le search_path de pg_dump. Aucun objet ni donnée supprimé. Exécution Supabase non testée faute de cible active.
+
+## Migration des données PostgreSQL vers Supabase — préparation
+
+Mise à jour : récupération locale terminée, cluster redémarré proprement sur le port initial 55432. **Sauvegarde source vérifiée, commande code 0**, dossier privé `.local/backups/20261125111753_20c5632c` (PostgreSQL + médias + manifeste). Les deux échecs précédents sont historiques. L’import Supabase et les comparaisons après transfert restent en attente du projet actif et de ses accès PostgreSQL ; aucune bascule ni suppression effectuée.
+
+Utilisateur demande le transfert réel des données existantes. Cible toujours manquante : quatre projets connectés inactifs, aucun projet Qavelys identifié. Aucune restauration distante ni bascule. Deux tentatives de sauvegarde source ont expiré ; cluster local arrêté, démarrage entrepris sans réinitialisation, récupération PostgreSQL après interruption en cours. Sauvegarde non déclarée réussie. Plan de transfert et garde-fous dans `supabase.md` ; conserver données locales, migrations Django et schémas gérés Supabase. Aucun secret demandé dans le chat.
+
+## PostgreSQL Supabase — préparation du 25 novembre 2026
+
+Vérification locale exécutée avec succès : quatre configurations chargées/contrôlées (local inchangé, TLS require, verify-full et compatibilité pooler transaction, refus du mode TLS disable). Ces contrôles de paramètres ne prouvent pas une connexion distante et ne remplacent pas les tests PostgreSQL de concurrence sur la cible.
+
+Choix utilisateur : Supabase pour la base. Configuration TLS et compatibilité pooler transaction ajoutées, paramètres locaux conservés, guide `supabase.md` et lien Vercel. Django Auth/sessions/RBAC conservés ; aucun accès direct React à la base, aucune migration de données automatique. Découverte du compte : quatre projets inactifs, aucun Qavelys ; cible demandée à l’utilisateur. Aucun projet distant créé/modifié, aucune migration distante exécutée. Prévoir Data API/GraphQL non exposés avant migration sur projet dédié. Connexion réelle, TLS, migrations et validation distante restent non exécutés faute de cible active et secrets configurés.
+
 ## Préparation Vercel — 25 novembre 2026
 
 Demande explicite de fichiers et commandes : `frontend/vercel.json`, exclusions d’envoi, script PowerShell de configuration de l’origine backend et guide `docs/vercel.md` créés. Déploiement limité au frontend Vite avec relais API même origine vers Django HTTPS existant, routes SPA et cache API privé. Aucun secret transféré, aucun déploiement exécuté, aucun changement du backend local ou des règles métier. Ce lot ne reprend pas les autres travaux de production en suspens.

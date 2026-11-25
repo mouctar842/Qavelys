@@ -13,6 +13,17 @@ ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {'default': {'ENGINE': 'django.db.backends.postgresql', 'NAME': os.getenv('POSTGRES_DB', 'qavelys'), 'USER': os.getenv('POSTGRES_USER', 'qavelys'), 'PASSWORD': os.environ['POSTGRES_PASSWORD'], 'HOST': os.getenv('POSTGRES_HOST', 'localhost'), 'PORT': os.getenv('POSTGRES_PORT', '5432')}}
 DATABASES['default']['OPTIONS'] = {'connect_timeout': 5}
+# Supabase/PostgreSQL distant : TLS configurable sans modifier la base locale.
+if os.getenv('POSTGRES_SSLMODE'):
+    if os.environ['POSTGRES_SSLMODE'] not in {'require', 'verify-ca', 'verify-full'}:
+        raise ValueError('POSTGRES_SSLMODE doit imposer TLS : require, verify-ca ou verify-full.')
+    DATABASES['default']['OPTIONS']['sslmode'] = os.environ['POSTGRES_SSLMODE']
+if os.getenv('POSTGRES_SSLROOTCERT'):
+    DATABASES['default']['OPTIONS']['sslrootcert'] = os.environ['POSTGRES_SSLROOTCERT']
+# Le mode transaction du pooler ne conserve pas les curseurs serveur entre transactions.
+DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = os.getenv('POSTGRES_TRANSACTION_POOLER', '0') == '1'
+if DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS']:
+    DATABASES['default']['OPTIONS']['prepare_threshold'] = None
 AUTH_USER_MODEL = 'core.User'
 AUTH_PASSWORD_VALIDATORS = [{'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'}, {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'}, {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'}, {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'}]
 REST_FRAMEWORK = {'DEFAULT_AUTHENTICATION_CLASSES': ['core.authentication.VerifiedSessionAuthentication'], 'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'], 'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer']}
